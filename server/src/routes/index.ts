@@ -1,0 +1,38 @@
+import { Router } from 'express';
+import authRoutes from './authRoutes.js';
+import placesRoutes from './placesRoutes.js';
+import mapsRoutes from './mapsRoutes.js';
+import aiRoutes from './aiRoutes.js';
+import tripsRoutes from './tripsRoutes.js';
+import favoritesRoutes from './favoritesRoutes.js';
+import expensesRoutes from './expensesRoutes.js';
+import usersRoutes from './usersRoutes.js';
+import notificationsRoutes from './notificationsRoutes.js';
+import weatherRoutes from './weatherRoutes.js';
+import flightsRoutes from './flightsRoutes.js';
+import transportRoutes from './transportRoutes.js';
+import hotelsRoutes from './hotelsRoutes.js';
+import restaurantsRoutes from './restaurantsRoutes.js';
+import currencyRoutes from './currencyRoutes.js';
+import { getHealth } from '../controllers/healthController.js';
+
+const apiRouter = Router();
+
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/places', placesRoutes);
+apiRouter.use('/maps', mapsRoutes);
+apiRouter.use('/ai', aiRoutes);
+apiRouter.use('/trips', tripsRoutes);
+apiRouter.use('/favorites', favoritesRoutes);
+apiRouter.use('/expenses', expensesRoutes);
+apiRouter.use('/users', usersRoutes);
+apiRouter.use('/notifications', notificationsRoutes);
+apiRouter.use('/weather', weatherRoutes);
+apiRouter.use('/flights', flightsRoutes);
+apiRouter.use('/transport', transportRoutes);
+apiRouter.use('/hotels', hotelsRoutes);
+apiRouter.use('/restaurants', restaurantsRoutes);
+apiRouter.use('/currency', currencyRoutes);
+apiRouter.get('/health', getHealth);
+
+export default apiRouter;
