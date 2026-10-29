@@ -1,0 +1,51 @@
+services:
+  # ============================================================================
+  # TripWise AI - Production Render Deployment Blueprint
+  # ============================================================================
+  # Mode 1 (Recommended): Unified Full-Stack Web Service
+  # Runs both the React Vite frontend and Express TypeScript API on a single
+  # Render Web Service, staying 100% within Render's Free Tier limit (750 hrs/mo).
+  # ============================================================================
+  - type: web
+    name: tripwise-ai
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # MongoDB Atlas URI (mongodb+srv://user:password@cluster.mongodb.net/tripwise)
+      # If not provided, TripWise runs gracefully using its in-memory hybrid store
+      - key: MONGODB_URI
+        sync: false
+      # Live AI and external API keys (Optional - resilient fallbacks are built in)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEOAPIFY_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: AMADEUS_CLIENT_ID
+        sync: false
+      - key: AMADEUS_CLIENT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

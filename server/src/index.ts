@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { ENV } from './config/env.js';
 import { connectDB } from './config/db.js';
@@ -18,17 +19,33 @@ const app = express();
 // Security and middleware
 app.use(helmet({
   crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false,
 }));
 
+const allowedOrigins = [
+  ENV.CLIENT_URL,
+  ENV.CLIENT_URL?.replace(/\/$/, ''),
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: [
-    ENV.CLIENT_URL,
-    'http://localhost:5175',
-    'http://127.0.0.1:5175',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:3000',
-  ],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.onrender.com') ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -44,21 +61,42 @@ if (ENV.NODE_ENV !== 'test') {
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    app: 'TripWise AI REST API',
-    version: '1.0.0',
-    documentation: '/api/v1',
-    health: '/api/v1/health',
-  });
-});
-
 // Apply rate limiter to API v1
 app.use('/api/v1', apiLimiter);
 
 // Mount API v1 router
 app.use('/api/v1', apiRouter);
+
+// Resolve frontend client dist directory
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+const hasClientDist = fs.existsSync(clientDistPath) && fs.existsSync(path.join(clientDistPath, 'index.html'));
+
+if (hasClientDist) {
+  // Serve static assets with cache headers
+  app.use(express.static(clientDistPath, { maxAge: '1d' }));
+
+  // Fallback to React index.html for client-side routing
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+} else {
+  // Root route when running in API-only mode
+  app.get('/', (req, res) => {
+    res.json({
+      app: 'TripWise AI REST API',
+      version: '1.0.0',
+      documentation: '/api/v1',
+      health: '/api/v1/health',
+    });
+  });
+
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ success: false, message: 'API endpoint not found' });
+  });
+}
 
 // Centralized error handling
 app.use(errorHandler);
@@ -67,11 +105,14 @@ app.use(errorHandler);
 export const startServer = async () => {
   await connectDB();
   
-  const server = app.listen(ENV.PORT, () => {
+  const server = app.listen(ENV.PORT, '0.0.0.0', () => {
     console.log(`===============================================`);
-    console.log(`🚀 TripWise AI Backend Server running on port ${ENV.PORT}`);
+    console.log(`🚀 TripWise AI Server running on port ${ENV.PORT}`);
     console.log(`📍 Environment: ${ENV.NODE_ENV}`);
-    console.log(`🔗 API Base URL: http://localhost:${ENV.PORT}/api/v1`);
+    console.log(`🔗 API Base URL: http://0.0.0.0:${ENV.PORT}/api/v1`);
+    if (hasClientDist) {
+      console.log(`🌐 Serving Frontend UI from: ${clientDistPath}`);
+    }
     console.log(`===============================================`);
   });
 

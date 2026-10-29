@@ -166,9 +166,10 @@ npm test
 ---
 
 ## 🚢 Deployment Architecture
-- **Frontend:** Configured for **Vercel** (`client/dist` static build with SPA rewrites).
+- **Render (Full-Stack / Blueprint):** See the complete [Render Deployment Guide](./RENDER_DEPLOYMENT.md) for 1-click `render.yaml` blueprint deployment or manual setup.
+- **Frontend:** Configured for **Render Static Sites** or **Vercel** (`client/dist` static build with SPA rewrites).
 - **Backend:** Configured for **Render** / **Railway** with `npm run build && npm start`.
-- **Database:** Connects cleanly to **MongoDB Atlas** by setting `MONGODB_URI=mongodb+srv://...` in production environment variables.
+- **Database:** Connects cleanly to **MongoDB Atlas** by setting `MONGODB_URI=mongodb+srv://...` in production environment variables (includes automatic resilient in-memory fallback).
 
 ---
 
