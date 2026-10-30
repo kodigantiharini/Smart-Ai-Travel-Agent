@@ -159,7 +159,7 @@ export const BookingsPage: React.FC = () => {
           'ECONOMY',
           currency
         );
-        setFlights(res.data?.flights || []);
+        setFlights(res.data?.flights || res.data?.offers || []);
       } else if (activeTab === 'transport') {
         const res = await api.searchTransport(
           origin,

@@ -175,15 +175,17 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
+    const userData = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage,
+      preferences: user.preferences,
+    };
     res.json({
       success: true,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        profileImage: user.profileImage,
-        preferences: user.preferences,
-      },
+      user: userData,
+      data: userData,
     });
   } else {
     const user = memoryStore.users.find((u) => u._id === req.user?.id || u.id === req.user?.id);
@@ -191,15 +193,17 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
+    const userData = {
+      id: user._id || user.id,
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage,
+      preferences: user.preferences,
+    };
     res.json({
       success: true,
-      user: {
-        id: user._id || user.id,
-        name: user.name,
-        email: user.email,
-        profileImage: user.profileImage,
-        preferences: user.preferences,
-      },
+      user: userData,
+      data: userData,
     });
   }
 };

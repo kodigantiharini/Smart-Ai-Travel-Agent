@@ -27,8 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (storedToken) {
         try {
           const res = await api.getProfile();
-          if (res?.data) {
-            setUser(res.data);
+          if (res?.data || (res as any)?.user) {
+            setUser(res.data || (res as any).user);
           }
         } catch (err) {
           console.warn('Failed to fetch user with existing token, clearing session.');
