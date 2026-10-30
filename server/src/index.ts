@@ -73,14 +73,31 @@ const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const hasClientDist = fs.existsSync(clientDistPath) && fs.existsSync(path.join(clientDistPath, 'index.html'));
 
 if (hasClientDist) {
-  // Serve static assets with cache headers
-  app.use(express.static(clientDistPath, { maxAge: '1d' }));
+  // Serve hashed assets (/assets/*.js, /assets/*.css) with long-term cache
+  const assetsPath = path.join(clientDistPath, 'assets');
+  if (fs.existsSync(assetsPath)) {
+    app.use('/assets', express.static(assetsPath, { maxAge: '1y', immutable: true }));
+  }
 
-  // Fallback to React index.html for client-side routing
+  // Serve other static files (favicon, etc.) without caching HTML
+  app.use(express.static(clientDistPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    },
+  }));
+
+  // Fallback to React index.html for client-side routing (strictly no cache for HTML)
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
       return res.status(404).json({ success: false, message: 'Resource not found' });
     }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 } else {

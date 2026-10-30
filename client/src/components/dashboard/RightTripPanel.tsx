@@ -114,14 +114,16 @@ export const RightTripPanel: React.FC<RightTripPanelProps> = ({
       const res = await api.getWeather(undefined, undefined, destinationName);
       if (res.data?.current) {
         const cur = res.data.current;
+        const temp = cur.temperatureC ?? cur.temperature ?? 24;
+        const description = cur.weatherCondition ?? cur.weatherDescription ?? 'Pleasant Weather';
         const rainProb = cur.precipitationProbability ?? (cur.weatherCode >= 51 ? 80 : 10);
         setWeatherData({
-          temp: Math.round(cur.temperature),
-          description: cur.weatherDescription || 'Fair Skies',
+          temp: Math.round(temp),
+          description,
           conditionCode: cur.weatherCode || 0,
           rainProb,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          hasAlert: rainProb > 50 || res.data.alerts?.length > 0,
+          hasAlert: rainProb > 50 || (res.data.alerts && res.data.alerts.length > 0),
           alertMessage:
             rainProb > 50
               ? 'High probability of rain. Recommend indoor attractions or packing rainwear.'

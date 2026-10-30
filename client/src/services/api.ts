@@ -9,7 +9,14 @@ import {
   NotificationItem,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+export const API_BASE_URL = (() => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  // If in production or envUrl points to localhost, always use relative /api/v1 so requests go to the deployed origin
+  if (import.meta.env.PROD || !envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
+    return '/api/v1';
+  }
+  return envUrl.replace(/\/$/, '');
+})();
 
 const getHeaders = (isJson = true) => {
   const token = localStorage.getItem('tripwise_token');

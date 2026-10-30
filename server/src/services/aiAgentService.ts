@@ -173,6 +173,19 @@ export class AiAgentService {
         console.warn('Geocoding fallback:', err.message);
       }
 
+      if (!lat || !lng) {
+        const v = VERIFIED_PLACES.find(
+          (p) =>
+            p.city.toLowerCase() === destination.toLowerCase() ||
+            destination.toLowerCase().includes(p.city.toLowerCase()) ||
+            p.name.toLowerCase().includes(destination.toLowerCase())
+        );
+        if (v?.coordinates) {
+          lat = v.coordinates.lat;
+          lng = v.coordinates.lng;
+        }
+      }
+
       // Concurrently query weather, verified places, hotels, and flights
       const shouldFetchHotels = promptLower.includes('hotel') || promptLower.includes('resort') || promptLower.includes('stay') || promptLower.includes('plan') || promptLower.includes('trip');
       const shouldFetchFlights = promptLower.includes('flight') || promptLower.includes('fly') || promptLower.includes('airport');
