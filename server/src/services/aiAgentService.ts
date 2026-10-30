@@ -44,7 +44,7 @@ export class AiAgentService {
 
   // Groq models in order of priority:
   // Qwen 3.8 27B is ultra-fast (1.5-2.5s) and directly generates rich Markdown text and JSON
-  private static groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
+  private static groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
 
   /**
    * Smart destination extractor from natural language prompts supporting worldwide destinations & Indian districts
@@ -308,6 +308,8 @@ Formatting Rules (VERY IMPORTANT):
 6. Respect user constraints (e.g. ₹50,000 for 4 people means ₹12,500 per person; recommend peaceful spots, homestays, waterfalls, and nature as requested).
 7. If real-time data is provided below, incorporate those verified places and weather conditions into your answer.
 8. If the user asks a greeting or simple question, answer warmly and concisely.
+9. Always confirm the exact destination the user asked about (e.g. Munnar, Goa, Paris). Never mention or greet with an unrelated city name.
+10. Format currency clearly (e.g. ₹ or INR, $ or USD).
 ${toolContext}`;
 
     // 5. Call Groq with reliable models and fallback
