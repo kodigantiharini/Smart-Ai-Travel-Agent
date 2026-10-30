@@ -112,6 +112,14 @@ const AnimatedRoutes: React.FC = () => {
             </PageTransition>
           }
         />
+        <Route
+          path="/trip-planner"
+          element={
+            <PageTransition>
+              <TripPlannerPage />
+            </PageTransition>
+          }
+        />
 
         {/* 8. Itinerary Details */}
         <Route

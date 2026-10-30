@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Compass,
   Sparkles,
+  Bot,
   MapPin,
   Calendar,
   Wallet,
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   const navItems = [
     { label: 'Home', path: '/', icon: Compass },
+    { label: 'AI Assistant', path: '/assistant', icon: Bot, badge: 'LIVE' },
     { label: 'AI Planner', path: '/planner', icon: Sparkles, badge: 'AI' },
     { label: 'Explore', path: '/explore', icon: MapPin },
     { label: 'My Trips', path: '/trips', icon: Calendar },

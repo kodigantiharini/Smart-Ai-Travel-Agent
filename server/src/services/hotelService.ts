@@ -32,7 +32,9 @@ export interface HotelOffer {
 }
 
 export class HotelService {
-  private static groqKey = ENV.GROQ_API_KEY;
+  private static getGroqKey(): string {
+    return (process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || '').trim();
+  }
 
   private static getHotelPhoto(category: string, name = ''): string {
     const c = (category + ' ' + name).toLowerCase();
@@ -88,7 +90,8 @@ export class HotelService {
     let hotels: HotelOffer[] = [];
 
     // 1. Fetch real-time hotel directory with official phone numbers using Groq AI
-    if (this.groqKey && this.groqKey.trim().length > 10) {
+    const activeGroqKey = this.getGroqKey();
+    if (activeGroqKey && activeGroqKey.length > 10) {
       try {
         const prompt = `Search the live internet directory for 4 real, authentic hotels and resorts in ${destName}, ${country}.
 Provide full, accurate information including the real enquiry / front-desk phone number (using country code ${countryCode}), full address in ${destName}, room type, check-in/out hours, star rating, and price in ${currency}.
@@ -131,10 +134,10 @@ Return strictly valid JSON only without markdown or code fences:
               },
               {
                 headers: {
-                  Authorization: `Bearer ${this.groqKey.trim()}`,
+                  Authorization: `Bearer ${activeGroqKey}`,
                   'Content-Type': 'application/json',
                 },
-                timeout: 20000,
+                timeout: 8000,
               }
             );
 

@@ -57,29 +57,31 @@ export class AiAgentService {
     const p = prompt.trim();
     const pLower = p.toLowerCase();
 
-    // 1. Check Indian District and Station Hub directory
-    for (const d of INDIAN_DISTRICTS_STATIONS) {
-      const cleanDist = d.district.replace(/\(.*?\)/, '').trim().toLowerCase();
-      const distRegex = new RegExp(`\\b${cleanDist}\\b`, 'i');
-      if (distRegex.test(pLower)) {
-        return d.district.replace(/\(.*?\)/, '').trim();
-      }
-      const stName = d.primaryStation.toLowerCase();
-      if (pLower.includes(stName) || (d.stationCode && pLower.includes(d.stationCode.toLowerCase()))) {
-        return d.district.replace(/\(.*?\)/, '').trim();
-      }
-      if (d.nearestRailhead && pLower.includes(d.nearestRailhead.toLowerCase())) {
-        return d.district;
+    // 1. Explicit destination action phrases have the HIGHEST priority
+    // Matches: "trip to Munnar", "flight to Paris", "guide for Goa", "live weather in Kyoto", "hotels in Manali"
+    const explicitPatterns = [
+      /(?:trip to|travel to|going to|holiday in|vacation in|visit|visiting|explore|exploring|tour to|heading to|flight to|flights to|guide to|guide for|about|(?:live\s+)?weather in|hotels in|places in|resorts in)\s+([a-zA-Z\s]{2,25}?)(?:for|in|within|under|with|and|\?|\.|$)/i,
+      /(?:in|to)\s+([a-zA-Z\s]{2,25}?)(?:within|under|for\s+\d|\?|\.|$)/i,
+    ];
+
+    for (const pat of explicitPatterns) {
+      const match = p.match(pat);
+      if (match && match[1]) {
+        const candidate = match[1].trim();
+        const nonDestWords = ['the', 'a', 'an', 'my', 'peaceful', 'places', 'nature', 'waterfalls', 'budget', 'hotels', 'cheap', 'best', 'good', 'top', 'luxury', 'comfort', 'weekend', 'family'];
+        if (!nonDestWords.includes(candidate.toLowerCase()) && candidate.length >= 3) {
+          return candidate.split(' ').map((s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
+        }
       }
     }
 
-    // 2. Comprehensive Global Hub Cities & Travel Regions
+    // 2. Comprehensive Global Hub Cities & Well-Known Travel Regions with strict word boundaries
     const globalKnown = [
-      'paris', 'tokyo', 'london', 'new york', 'sydney', 'singapore', 'rome', 'dubai',
+      'munnar', 'kerala', 'goa', 'manali', 'paris', 'tokyo', 'london', 'new york', 'sydney', 'singapore', 'rome', 'dubai',
       'bangkok', 'barcelona', 'amsterdam', 'berlin', 'kyoto', 'bali', 'seoul', 'hong kong',
       'cairo', 'cape town', 'los angeles', 'san francisco', 'venice', 'vienna', 'zurich',
       'prague', 'auckland', 'toronto', 'vancouver', 'reykjavik', 'honolulu', 'santorini',
-      'kerala', 'goa', 'manali', 'munnar', 'jaipur', 'agra', 'ladakh', 'varanasi', 'ooty',
+      'jaipur', 'agra', 'ladakh', 'varanasi', 'ooty',
       'coorg', 'udaipur', 'delhi', 'mumbai', 'shimla', 'alleppey', 'alappuzha', 'wayanad',
       'mysore', 'hampi', 'rishikesh', 'pondicherry', 'srinagar', 'kashmir', 'darjeeling',
       'gangtok', 'andaman', 'lakshadweep', 'hyderabad', 'chennai', 'bengaluru', 'bangalore',
@@ -92,34 +94,45 @@ export class AiAgentService {
     for (const name of globalKnown) {
       const regex = new RegExp(`\\b${name}\\b`, 'i');
       if (regex.test(pLower)) {
-        return name.split(' ').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+        return name.split(' ').map((s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
       }
     }
 
-    // 3. Dynamic Pattern Matching for Any Worldwide Place
-    const patterns = [
-      /(?:trip to|travel to|going to|holiday in|vacation in|visit|visiting|explore|exploring|tour to|heading to|flight to|flights to|guide to|guide for|about|weather in|hotels in|places in)\s+([a-zA-Z\s]{2,25}?)(?:for|in|within|under|with|\?|\.|$)/i,
-      /(?:in|to)\s+([a-zA-Z\s]{2,25}?)(?:within|under|for\s+\d|\?|\.|$)/i,
-    ];
+    // 3. Indian Districts directory with strict word boundary
+    for (const d of INDIAN_DISTRICTS_STATIONS) {
+      const cleanDist = d.district.replace(/\(.*?\)/, '').trim().toLowerCase();
+      if (cleanDist.length >= 3) {
+        const distRegex = new RegExp(`\\b${cleanDist}\\b`, 'i');
+        if (distRegex.test(pLower)) {
+          return d.district.replace(/\(.*?\)/, '').trim();
+        }
+      }
 
-    for (const pat of patterns) {
-      const match = p.match(pat);
-      if (match && match[1]) {
-        const candidate = match[1].trim();
-        const nonDestWords = ['the', 'a', 'an', 'my', 'peaceful', 'places', 'nature', 'waterfalls', 'budget', 'hotels', 'cheap', 'best', 'good', 'top'];
-        if (!nonDestWords.includes(candidate.toLowerCase()) && candidate.length >= 3) {
-          return candidate.split(' ').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+      // Check primary station with full word boundary and minimum length of 5
+      const stClean = d.primaryStation.replace(/\(.*?\)/, '').replace(/junction|terminal|cantt|cantonment/i, '').trim().toLowerCase();
+      if (stClean.length >= 5) {
+        const stRegex = new RegExp(`\\b${stClean}\\b`, 'i');
+        if (stRegex.test(pLower)) {
+          return d.district.replace(/\(.*?\)/, '').trim();
+        }
+      }
+
+      // Check 3+ letter uppercase station code with strict boundary
+      if (d.stationCode && d.stationCode.length >= 3) {
+        const codeRegex = new RegExp(`\\b${d.stationCode}\\b`, 'i');
+        if (codeRegex.test(p)) {
+          return d.district.replace(/\(.*?\)/, '').trim();
         }
       }
     }
 
-    // 4. If query is a concise 1-3 word place name
+    // 4. Concise 1-3 word place name
     const words = p.split(/\s+/);
     if (words.length >= 1 && words.length <= 3 && !/[?!.,;:]/.test(p)) {
       const clean = p.replace(/[^a-zA-Z\s]/g, '').trim();
-      const nonDest = ['hello', 'hi', 'hey', 'help', 'travel', 'trip', 'guide', 'planner', 'agent'];
+      const nonDest = ['hello', 'hi', 'hey', 'help', 'travel', 'trip', 'guide', 'planner', 'agent', 'what', 'where', 'when', 'how', 'who', 'why'];
       if (clean.length >= 3 && !nonDest.includes(clean.toLowerCase())) {
-        return clean.split(' ').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+        return clean.split(' ').map((s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
       }
     }
 

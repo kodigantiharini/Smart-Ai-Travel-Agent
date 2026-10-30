@@ -33,7 +33,9 @@ export interface TransportOption {
 }
 
 export class TransportService {
-  private static groqKey = ENV.GROQ_API_KEY;
+  private static getGroqKey(): string {
+    return (process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || '').trim();
+  }
 
   /**
    * Search realistic train & bus connectivity between places & Indian districts using Groq intelligence
@@ -79,7 +81,8 @@ export class TransportService {
     let options: TransportOption[] = [];
 
     // 2. Fetch real active train & bus routes via Groq AI
-    if (this.groqKey && this.groqKey.trim().length > 10) {
+    const activeGroqKey = this.getGroqKey();
+    if (activeGroqKey && activeGroqKey.length > 10) {
       try {
         const hillNotice = destDistrict?.isHillOrRemote
           ? `NOTE: Destination ${destDistrict.district} is a hill district without broad gauge railway. Nearest Railhead is ${destDistrict.nearestRailhead} (${destDistrict.distanceToRailheadKm} km away). For trains, list trains reaching ${destDistrict.nearestRailhead}. For buses, list direct hill service from ${origCity} to ${destDistrict.primaryBusStand}.`
@@ -134,7 +137,7 @@ Return strictly valid JSON only:
         const groqRes = await axios.post(
           'https://api.groq.com/openai/v1/chat/completions',
           {
-            model: 'openai/gpt-oss-120b',
+            model: 'qwen/qwen3.8-27b',
             messages: [
               {
                 role: 'system',
@@ -148,10 +151,10 @@ Return strictly valid JSON only:
           },
           {
             headers: {
-              Authorization: `Bearer ${this.groqKey.trim()}`,
+              Authorization: `Bearer ${activeGroqKey}`,
               'Content-Type': 'application/json',
             },
-            timeout: 25000,
+            timeout: 8000,
           }
         );
 

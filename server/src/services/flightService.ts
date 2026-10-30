@@ -100,7 +100,9 @@ const AIRPORT_REGISTRY: Record<string, { code: string; city: string; country: st
 };
 
 export class FlightService {
-  private static groqKey = ENV.GROQ_API_KEY;
+  private static getGroqKey(): string {
+    return (process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || '').trim();
+  }
 
   /**
    * Resolve an airport name, city, or IATA code into standard IATA format
@@ -158,7 +160,8 @@ export class FlightService {
     let offers: FlightOffer[] = [];
 
     // 1. Fetch real active airline schedules via Groq AI
-    if (this.groqKey && this.groqKey.trim().length > 10) {
+    const activeGroqKey = this.getGroqKey();
+    if (activeGroqKey && activeGroqKey.length > 10) {
       try {
         const prompt = `Search live flight route information operating from ${origin.city} (${origin.code}) to ${destination.city} (${destination.code}) for date ${departureDate || 'upcoming travel'}.
 List 4 real active flights (e.g. IndiGo, Air India, Vistara, Akasa, SpiceJet, Emirates, Qatar Airways).
@@ -185,7 +188,7 @@ Return strictly valid JSON only:
         const groqRes = await axios.post(
           'https://api.groq.com/openai/v1/chat/completions',
           {
-            model: 'openai/gpt-oss-120b',
+            model: 'qwen/qwen3.8-27b',
             messages: [
               { role: 'system', content: 'You are a real-time airline flight directory API. Output strictly valid JSON with official airline helplines.' },
               { role: 'user', content: prompt }
@@ -195,10 +198,10 @@ Return strictly valid JSON only:
           },
           {
             headers: {
-              Authorization: `Bearer ${this.groqKey.trim()}`,
+              Authorization: `Bearer ${activeGroqKey}`,
               'Content-Type': 'application/json',
             },
-            timeout: 25000,
+            timeout: 8000,
           }
         );
 
