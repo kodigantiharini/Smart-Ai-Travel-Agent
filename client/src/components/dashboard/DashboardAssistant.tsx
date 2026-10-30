@@ -124,7 +124,7 @@ export const DashboardAssistant: React.FC<DashboardAssistantProps> = ({
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: agentData.reply || 'Here are the live travel details you requested.',
-        toolsUsed: agentData.executedTools,
+        toolsUsed: agentData.toolExecutions || agentData.executedTools,
         itineraryDraft: agentData.itineraryData,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -224,7 +224,7 @@ export const DashboardAssistant: React.FC<DashboardAssistantProps> = ({
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-mono text-[9px] border border-teal-200/50 dark:border-teal-800"
                       >
                         <Wrench size={9} className="text-teal-500" />
-                        <span>tool: {tool.tool}</span>
+                        <span>tool: {tool.toolName || (tool as any).tool}</span>
                         <CheckCircle size={9} className="text-emerald-500" />
                       </span>
                     ))}

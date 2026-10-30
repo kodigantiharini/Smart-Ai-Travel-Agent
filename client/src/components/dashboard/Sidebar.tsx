@@ -27,7 +27,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, loginAsDemo } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const navItems = [
@@ -145,7 +145,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                 {user?.name || 'Guest Traveler'}
               </p>
               <p className="text-[10px] text-slate-400 truncate">
-                {user ? user.email : 'Free Plan'}
+                {user ? (
+                  user.email
+                ) : (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await loginAsDemo();
+                      } catch {
+                        navigate('/login');
+                      }
+                    }}
+                    className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                  >
+                    1-Click Demo Login
+                  </button>
+                )}
               </p>
             </div>
           </div>

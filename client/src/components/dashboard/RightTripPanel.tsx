@@ -69,17 +69,21 @@ export const RightTripPanel: React.FC<RightTripPanelProps> = ({
     const fetchLatestTrip = async () => {
       try {
         setLoadingTrip(true);
-        const res = await api.getTrips();
-        if (res.data && res.data.length > 0) {
-          const latest = res.data[0];
-          setTrip(latest);
-          await loadItinerary(latest._id || latest.id);
-          await loadWeather(latest.destination);
-        } else {
-          setTrip(null);
+        const token = localStorage.getItem('tripwise_token');
+        if (token) {
+          const res = await api.getTrips();
+          if (res.data && res.data.length > 0) {
+            const latest = res.data[0];
+            setTrip(latest);
+            await loadItinerary(latest._id || latest.id);
+            await loadWeather(latest.destination);
+            return;
+          }
         }
+        setTrip(null);
       } catch (err) {
         console.warn('Failed to fetch user trips:', err);
+        setTrip(null);
       } finally {
         setLoadingTrip(false);
       }

@@ -32,12 +32,17 @@ export interface AgentChatResponse {
 }
 
 export class AiAgentService {
-  private static groqKey = ENV.GROQ_API_KEY;
-  private static geminiKey = ENV.GEMINI_API_KEY;
+  private static getGroqKey(): string {
+    return (process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || '').trim();
+  }
+
+  private static getGeminiKey(): string {
+    return (process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY || '').trim();
+  }
 
   // Groq models in order of priority:
-  // High-capacity models with large token thresholds on Groq
-  private static groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
+  // Qwen 3.8 27B is ultra-fast (1.5-2.5s) and directly generates rich Markdown text and JSON
+  private static groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
 
   /**
    * Smart destination extractor from natural language prompts supporting worldwide destinations & Indian districts
@@ -305,8 +310,10 @@ ${toolContext}`;
     // 5. Call Groq with reliable models and fallback
     let reply = '';
     let isLiveAi = false;
+    const activeGroqKey = this.getGroqKey();
+    const activeGeminiKey = this.getGeminiKey();
 
-    if (this.groqKey && this.groqKey.trim().length > 10) {
+    if (activeGroqKey && activeGroqKey.length > 10) {
       const messages = [
         { role: 'system', content: systemPrompt },
         ...history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
@@ -325,10 +332,10 @@ ${toolContext}`;
             },
             {
               headers: {
-                Authorization: `Bearer ${this.groqKey.trim()}`,
+                Authorization: `Bearer ${activeGroqKey}`,
                 'Content-Type': 'application/json',
               },
-              timeout: 25000,
+              timeout: 18000,
             }
           );
 
@@ -338,8 +345,7 @@ ${toolContext}`;
             reply = text.trim();
             isLiveAi = true;
             break;
-          } else if (choice?.message?.reasoning) {
-            // In case of a reasoning model without top-level content
+          } else if (choice?.message?.reasoning && choice.message.reasoning.trim().length > 20) {
             reply = choice.message.reasoning.trim();
             isLiveAi = true;
             break;
@@ -351,10 +357,10 @@ ${toolContext}`;
     }
 
     // 6. Gemini fallback if Groq failed or not configured
-    if (!reply && this.geminiKey && this.geminiKey.trim().length > 10) {
+    if (!reply && activeGeminiKey && activeGeminiKey.length > 10) {
       try {
         const geminiRes = await axios.post(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeGeminiKey}`,
           {
             contents: [
               {
@@ -474,7 +480,8 @@ ${toolContext}`;
     const usedPlaceNames = new Set<string>();
 
     // 2. Call Groq AI to generate intelligent, distinct, non-repetitive places
-    if (this.groqKey && this.groqKey.trim().length > 10) {
+    const activeGroqKey = this.getGroqKey();
+    if (activeGroqKey && activeGroqKey.length > 10) {
       try {
         const totalUniquePlacesNeeded = dayCount * stopsPerDay;
         const aiPrompt = `Generate a ${dayCount}-day travel itinerary for ${destination}.
@@ -502,7 +509,7 @@ MANDATORY RULES:
 
         for (const model of this.groqModels) {
           try {
-            const tokenLimit = model.includes('qwen') ? 850 : 3500;
+            const tokenLimit = 3000;
             const groqRes = await axios.post(
               'https://api.groq.com/openai/v1/chat/completions',
               {
@@ -516,10 +523,10 @@ MANDATORY RULES:
               },
               {
                 headers: {
-                  Authorization: `Bearer ${this.groqKey.trim()}`,
+                  Authorization: `Bearer ${activeGroqKey}`,
                   'Content-Type': 'application/json',
                 },
-                timeout: 30000,
+                timeout: 20000,
               }
             );
 

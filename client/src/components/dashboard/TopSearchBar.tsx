@@ -34,7 +34,7 @@ export const TopSearchBar: React.FC<TopSearchBarProps> = ({
   defaultDestination = '',
 }) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, loginAsDemo } = useAuth();
 
   // Search form state
   const [destination, setDestination] = useState(defaultDestination);
@@ -442,13 +442,29 @@ export const TopSearchBar: React.FC<TopSearchBarProps> = ({
                       Sign Out
                     </button>
                   ) : (
-                    <Link
-                      to="/login"
-                      onClick={() => setShowProfileDropdown(false)}
-                      className="block px-4 py-2 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-950/30"
-                    >
-                      Sign In / Register
-                    </Link>
+                    <div className="space-y-1">
+                      <button
+                        onClick={async () => {
+                          setShowProfileDropdown(false);
+                          try {
+                            await loginAsDemo();
+                          } catch {
+                            navigate('/login');
+                          }
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-teal-600 dark:text-teal-400 font-bold hover:bg-teal-50 dark:hover:bg-teal-950/30 flex items-center gap-1.5"
+                      >
+                        <Sparkles size={13} />
+                        <span>1-Click Demo Login</span>
+                      </button>
+                      <Link
+                        to="/login"
+                        onClick={() => setShowProfileDropdown(false)}
+                        className="block px-4 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                      >
+                        Sign In / Register
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>

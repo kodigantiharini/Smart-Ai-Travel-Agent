@@ -29,24 +29,36 @@ export const HomePage: React.FC = () => {
     let isMounted = true;
 
     const initDashboardData = async () => {
-      try {
-        const tripsRes = await api.getTrips();
-        if (isMounted && tripsRes.data && tripsRes.data.length > 0) {
-          const latest = tripsRes.data[0];
-          setActiveTrip(latest);
+      let tripLoaded = false;
+      const token = localStorage.getItem('tripwise_token');
 
-          // Load trip itinerary
-          const itinRes = await api.getTripItinerary(latest._id || latest.id);
-          if (itinRes.data && itinRes.data.length > 0) {
-            const firstDay = itinRes.data[0];
-            setSelectedDayStops(firstDay.stops || []);
-            syncMapStops(firstDay.stops || []);
+      if (token) {
+        try {
+          const tripsRes = await api.getTrips();
+          if (isMounted && tripsRes.data && tripsRes.data.length > 0) {
+            const latest = tripsRes.data[0];
+            setActiveTrip(latest);
+            tripLoaded = true;
+
+            // Load trip itinerary
+            const itinRes = await api.getTripItinerary(latest._id || latest.id);
+            if (itinRes.data && itinRes.data.length > 0) {
+              const firstDay = itinRes.data[0];
+              setSelectedDayStops(firstDay.stops || []);
+              syncMapStops(firstDay.stops || []);
+            }
           }
-        } else {
-          // If no saved trips, load featured Kyoto / Munnar attractions for the interactive map
-          const placesRes = await api.searchPlaces('Kyoto');
+        } catch (err) {
+          console.warn('Trips fetch skipped or not authenticated:', err);
+        }
+      }
+
+      // If no active trip loaded, populate the interactive map with rich verified destinations
+      if (!tripLoaded && isMounted) {
+        try {
+          const placesRes = await api.searchPlaces('');
           if (isMounted && placesRes.data && placesRes.data.length > 0) {
-            setMapPlaces(placesRes.data);
+            setMapPlaces(placesRes.data.slice(0, 10));
             if (placesRes.data[0]?.coordinates) {
               setMapCenter([
                 placesRes.data[0].coordinates.lat,
@@ -54,9 +66,9 @@ export const HomePage: React.FC = () => {
               ]);
             }
           }
+        } catch (err) {
+          console.warn('Default places load error:', err);
         }
-      } catch (err) {
-        console.warn('Dashboard data initialization:', err);
       }
     };
 
