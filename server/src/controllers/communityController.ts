@@ -30,18 +30,20 @@ export const getStories = async (req: Request, res: Response): Promise<void> => 
       if (stories.length === 0 && !category && !destination && !search) {
         try {
           const seeded = memoryStore.stories.map((s) => ({
+            authorId: s.authorId || '654321098765432109876543',
+            authorName: s.authorName || 'Travel Explorer',
+            authorAvatar: s.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
             title: s.title,
             content: s.content,
-            author: s.author,
             destination: s.destination,
+            location: s.location || '',
             photos: s.photos || [],
-            category: s.category || 'moments',
+            category: s.category || 'nature',
             tags: s.tags || [],
-            likesCount: s.likesCount || 0,
-            likedBy: s.likedBy || [],
-            comments: s.comments || [],
-            tripPreview: s.tripPreview,
-            createdAt: s.createdAt || new Date().toISOString(),
+            likes: Array.isArray(s.likes) ? s.likes : [],
+            comments: Array.isArray(s.comments) ? s.comments : [],
+            tripPlanPreview: s.tripPlanPreview,
+            createdAt: new Date(),
           }));
           await StoryModel.insertMany(seeded);
           stories = await StoryModel.find(query).sort({ createdAt: -1 }).limit(50);

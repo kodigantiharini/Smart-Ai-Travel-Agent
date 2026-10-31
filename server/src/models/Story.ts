@@ -33,7 +33,7 @@ export interface IStory extends Document {
 
 const StorySchema = new Schema<IStory>(
   {
-    authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    authorId: { type: Schema.Types.Mixed, required: true, index: true },
     authorName: { type: String, required: true },
     authorAvatar: { type: String, default: '' },
     title: { type: String, required: true, trim: true },
@@ -43,7 +43,6 @@ const StorySchema = new Schema<IStory>(
     photos: { type: [String], default: [] },
     category: {
       type: String,
-      enum: ['nature', 'beach', 'culture', 'food', 'adventure', 'budget'],
       default: 'nature',
       index: true,
     },
