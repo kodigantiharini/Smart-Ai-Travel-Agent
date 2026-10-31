@@ -38,6 +38,52 @@ export interface Place {
   distanceKm?: number;
 }
 
+export interface TripCollaborator {
+  userId?: string;
+  name: string;
+  email: string;
+  role: 'organizer' | 'editor' | 'viewer';
+  avatar?: string;
+  joinedAt?: string;
+}
+
+export interface TripVote {
+  id: string;
+  proposedBy: string;
+  proposerName: string;
+  activityName: string;
+  category: string;
+  estimatedCost?: number;
+  dayNumber?: number;
+  description?: string;
+  upvotes: string[];
+  downvotes: string[];
+  status: 'active' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface TripMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface TripBooking {
+  id: string;
+  type: 'flight' | 'hotel' | 'transport' | 'activity';
+  title: string;
+  provider: string;
+  referenceNumber: string;
+  date: string;
+  details?: string;
+  amount?: number;
+  currency?: string;
+  status: 'confirmed' | 'pending';
+}
+
 export interface Trip {
   _id?: string;
   id?: string;
@@ -52,7 +98,53 @@ export interface Trip {
   status: 'planning' | 'upcoming' | 'ongoing' | 'completed' | 'archived';
   coverImage?: string;
   notes?: string;
+  inviteCode?: string;
+  collaborators?: TripCollaborator[];
+  votes?: TripVote[];
+  messages?: TripMessage[];
+  bookings?: TripBooking[];
   createdAt?: string;
+}
+
+export interface StoryComment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface TravelStory {
+  _id?: string;
+  id?: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  title: string;
+  content: string;
+  destination: string;
+  location?: string;
+  photos: string[];
+  category: 'nature' | 'beach' | 'culture' | 'food' | 'adventure' | 'budget';
+  tags: string[];
+  likes: string[];
+  comments: StoryComment[];
+  tripPlanPreview?: {
+    days: number;
+    budget: string;
+    topStops: string[];
+  };
+  createdAt: string;
+}
+
+export interface UserStats {
+  tripsCount: number;
+  placesSavedCount: number;
+  storiesSharedCount: number;
+  companionsCount: number;
+  destinationsCount: number;
+  destinations: string[];
 }
 
 export interface ItineraryStop {

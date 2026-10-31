@@ -10,6 +10,7 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     name: string;
+    profileImage?: string;
   };
 }
 
@@ -40,7 +41,7 @@ export const authenticate = async (
         res.status(401).json({ success: false, message: 'Invalid token. User not found.' });
         return;
       }
-      req.user = { id: user._id.toString(), email: user.email, name: user.name };
+      req.user = { id: user._id.toString(), email: user.email, name: user.name, profileImage: user.profileImage };
     } else {
       // Memory store fallback
       const user = memoryStore.users.find((u) => u._id === decoded.id || u.id === decoded.id);
@@ -48,7 +49,7 @@ export const authenticate = async (
         res.status(401).json({ success: false, message: 'Invalid token or session expired.' });
         return;
       }
-      req.user = { id: user._id || user.id, email: user.email, name: user.name };
+      req.user = { id: user._id || user.id, email: user.email, name: user.name, profileImage: user.profileImage };
     }
 
     next();
@@ -58,4 +59,37 @@ export const authenticate = async (
       message: 'Invalid or expired authentication token.',
     });
   }
+};
+
+export const requireAuth = authenticate;
+
+export const optionalAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, ENV.JWT_SECRET) as { id: string; email: string };
+    const dbStatus = getDBStatus();
+    if (dbStatus.connected) {
+      const user = await UserModel.findById(decoded.id).select('-passwordHash');
+      if (user) {
+        req.user = { id: user._id.toString(), email: user.email, name: user.name, profileImage: user.profileImage };
+      }
+    } else {
+      const user = memoryStore.users.find((u) => u._id === decoded.id || u.id === decoded.id);
+      if (user) {
+        req.user = { id: user._id || user.id, email: user.email, name: user.name, profileImage: user.profileImage };
+      }
+    }
+  } catch {
+    // Ignore invalid optional token
+  }
+  next();
 };

@@ -14,6 +14,7 @@ import transportRoutes from './transportRoutes.js';
 import hotelsRoutes from './hotelsRoutes.js';
 import restaurantsRoutes from './restaurantsRoutes.js';
 import currencyRoutes from './currencyRoutes.js';
+import communityRoutes from './communityRoutes.js';
 import { getHealth } from '../controllers/healthController.js';
 
 const apiRouter = Router();
@@ -23,6 +24,7 @@ apiRouter.use('/places', placesRoutes);
 apiRouter.use('/maps', mapsRoutes);
 apiRouter.use('/ai', aiRoutes);
 apiRouter.use('/trips', tripsRoutes);
+apiRouter.use('/community', communityRoutes);
 apiRouter.use('/favorites', favoritesRoutes);
 apiRouter.use('/expenses', expensesRoutes);
 apiRouter.use('/users', usersRoutes);

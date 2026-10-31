@@ -35,6 +35,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { LegalPage } from './pages/LegalPage';
+import { CommunityStoriesPage } from './pages/CommunityStoriesPage';
 
 // Animated Route Switcher
 const AnimatedRoutes: React.FC = () => {
@@ -61,6 +62,20 @@ const AnimatedRoutes: React.FC = () => {
               <ExplorePage />
             </PageTransition>
           }
+        />
+
+        {/* 2b. MiVoyage Community Feed & Moments */}
+        <Route
+          path="/community"
+          element={
+            <PageTransition>
+              <CommunityStoriesPage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/stories"
+          element={<Navigate to="/community" replace />}
         />
 
         {/* 3. Interactive Map */}

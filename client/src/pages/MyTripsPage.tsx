@@ -10,6 +10,10 @@ import {
   Archive,
   ArrowRight,
   Sparkles,
+  Users,
+  KeyRound,
+  X,
+  Check,
 } from 'lucide-react';
 import { Trip } from '../types';
 import { api } from '../services/api';
@@ -23,6 +27,9 @@ export const MyTripsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [joiningTrip, setJoiningTrip] = useState(false);
 
   // New Trip form state
   const [newTripName, setNewTripName] = useState('');
@@ -114,6 +121,27 @@ export const MyTripsPage: React.FC = () => {
     }
   };
 
+  const handleJoinTrip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinCodeInput.trim()) return;
+
+    setJoiningTrip(true);
+    try {
+      const res = await api.joinTripByCode(joinCodeInput.trim());
+      alert(res.message || 'Joined group trip successfully!');
+      setShowJoinModal(false);
+      setJoinCodeInput('');
+      await fetchTrips();
+      if (res.data?._id || res.data?.id) {
+        navigate(`/trips/${res.data._id || res.data.id}/itinerary`);
+      }
+    } catch (err: any) {
+      alert(`Failed to join trip: ${err.message || 'Invalid invite code'}`);
+    } finally {
+      setJoiningTrip(false);
+    }
+  };
+
   const filteredTrips = trips.filter((t) => {
     if (statusFilter === 'all') return t.status !== 'archived';
     return t.status === statusFilter;
@@ -155,11 +183,19 @@ export const MyTripsPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 glass-panel hover:text-blue-600 flex items-center justify-center gap-1.5 transition-colors min-h-[44px]"
+          >
+            <Users className="w-4 h-4 text-blue-500" />
+            <span>Join with Code</span>
+          </button>
+
           <Link
             to="/planner"
-            className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 glass-panel hover:text-teal-600 flex items-center justify-center gap-1.5 transition-colors min-h-[44px]"
+            className="flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 glass-panel hover:text-blue-600 flex items-center justify-center gap-1.5 transition-colors min-h-[44px]"
           >
-            <Sparkles className="w-4 h-4 text-teal-500" />
+            <Sparkles className="w-4 h-4 text-blue-500" />
             <span>AI Trip Generator</span>
           </Link>
 
@@ -261,6 +297,27 @@ export const MyTripsPage: React.FC = () => {
                         {trip.startDate} - {trip.endDate} ({trip.travelers} traveler
                         {trip.travelers > 1 ? 's' : ''})
                       </span>
+                    </div>
+
+                    {/* MiVoyage Group / Solo Indicator */}
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      {trip.collaborators && trip.collaborators.length > 1 ? (
+                        <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold">
+                          <Users size={13} />
+                          <span>Crew: {trip.collaborators.length} Members</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+                          <Users size={13} />
+                          <span>Solo Traveler</span>
+                        </div>
+                      )}
+
+                      {trip.inviteCode && (
+                        <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                          {trip.inviteCode}
+                        </span>
+                      )}
                     </div>
 
                     <div className="pt-2 text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -418,6 +475,69 @@ export const MyTripsPage: React.FC = () => {
                 className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-brand shadow-md shadow-glow-teal min-h-[44px] flex items-center justify-center"
               >
                 {creating ? 'Creating...' : 'Create Itinerary'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Join Group Trip Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <form
+            onSubmit={handleJoinTrip}
+            className="glass-panel w-full max-w-md p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold font-display text-navy-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <span>Join a Group Trip</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Enter the invite code shared by your friend or travel companion
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinModal(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-500">
+                Group Invite Code *
+              </label>
+              <div className="relative">
+                <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  required
+                  value={joinCodeInput}
+                  onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+                  placeholder="e.g. MIV-PARIS"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] tracking-wider"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowJoinModal(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={joiningTrip || !joinCodeInput.trim()}
+                className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-1.5"
+              >
+                {joiningTrip ? 'Joining...' : 'Join Trip'}
               </button>
             </div>
           </form>

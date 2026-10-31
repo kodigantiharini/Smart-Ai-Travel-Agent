@@ -7,6 +7,13 @@ import {
   BudgetSummary,
   User,
   NotificationItem,
+  TravelStory,
+  StoryComment,
+  TripVote,
+  TripMessage,
+  TripBooking,
+  TripCollaborator,
+  UserStats,
 } from '../types';
 
 export const API_BASE_URL = (() => {
@@ -287,6 +294,109 @@ export const api = {
 
   async markAllNotificationsRead(): Promise<{ message: string }> {
     return fetchApi('/notifications/read-all', { method: 'POST' });
+  },
+
+  // MiVoyage Community Travel Stories
+  async getStories(params?: { category?: string; destination?: string; search?: string }): Promise<{ data: TravelStory[] }> {
+    const q = new URLSearchParams();
+    if (params?.category) q.set('category', params.category);
+    if (params?.destination) q.set('destination', params.destination);
+    if (params?.search) q.set('search', params.search);
+    const queryString = q.toString() ? `?${q.toString()}` : '';
+    return fetchApi(`/community/stories${queryString}`);
+  },
+
+  async getStoryById(id: string): Promise<{ data: TravelStory }> {
+    return fetchApi(`/community/stories/${id}`);
+  },
+
+  async createStory(storyData: Partial<TravelStory>): Promise<{ data: TravelStory }> {
+    return fetchApi('/community/stories', {
+      method: 'POST',
+      body: JSON.stringify(storyData),
+    });
+  },
+
+  async toggleLikeStory(storyId: string): Promise<{ data: { likes: string[]; count: number; isLiked: boolean } }> {
+    return fetchApi(`/community/stories/${storyId}/like`, { method: 'POST' });
+  },
+
+  async addStoryComment(storyId: string, text: string): Promise<{ data: StoryComment; comments: StoryComment[] }> {
+    return fetchApi(`/community/stories/${storyId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+  },
+
+  // MiVoyage Collaboration & Voting
+  async inviteCollaborator(tripId: string, name: string, email: string, role = 'editor'): Promise<{ data: TripCollaborator[] }> {
+    return fetchApi(`/trips/${tripId}/collaborators`, {
+      method: 'POST',
+      body: JSON.stringify({ name, email, role }),
+    });
+  },
+
+  async removeCollaborator(tripId: string, email: string): Promise<{ data: TripCollaborator[] }> {
+    return fetchApi(`/trips/${tripId}/collaborators/${encodeURIComponent(email)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async joinTripByCode(inviteCode: string): Promise<{ data: Trip; message: string }> {
+    return fetchApi('/trips/join', {
+      method: 'POST',
+      body: JSON.stringify({ inviteCode }),
+    });
+  },
+
+  async getTripVotes(tripId: string): Promise<{ data: TripVote[] }> {
+    return fetchApi(`/trips/${tripId}/votes`);
+  },
+
+  async proposeTripVote(tripId: string, data: { activityName: string; category?: string; estimatedCost?: number; dayNumber?: number; description?: string }): Promise<{ data: TripVote; votes: TripVote[] }> {
+    return fetchApi(`/trips/${tripId}/votes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async castTripVote(tripId: string, voteId: string, voteType: 'up' | 'down' = 'up'): Promise<{ data: TripVote; votes: TripVote[] }> {
+    return fetchApi(`/trips/${tripId}/votes/${voteId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ voteType }),
+    });
+  },
+
+  async approveVoteToItinerary(tripId: string, voteId: string): Promise<{ data: any; message: string }> {
+    return fetchApi(`/trips/${tripId}/votes/${voteId}/approve`, {
+      method: 'POST',
+    });
+  },
+
+  async getTripMessages(tripId: string): Promise<{ data: TripMessage[] }> {
+    return fetchApi(`/trips/${tripId}/messages`);
+  },
+
+  async sendTripMessage(tripId: string, content: string): Promise<{ data: TripMessage; messages: TripMessage[] }> {
+    return fetchApi(`/trips/${tripId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  },
+
+  async getTripBookings(tripId: string): Promise<{ data: TripBooking[] }> {
+    return fetchApi(`/trips/${tripId}/bookings`);
+  },
+
+  async linkTripBooking(tripId: string, booking: Partial<TripBooking>): Promise<{ data: TripBooking; bookings: TripBooking[] }> {
+    return fetchApi(`/trips/${tripId}/bookings`, {
+      method: 'POST',
+      body: JSON.stringify(booking),
+    });
+  },
+
+  async getUserStats(): Promise<{ data: UserStats }> {
+    return fetchApi('/users/stats');
   },
 
   // Health

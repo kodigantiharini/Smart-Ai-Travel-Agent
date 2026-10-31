@@ -106,3 +106,76 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+export const getUserStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id || 'demo-user';
+    const userEmail = req.user?.email?.toLowerCase();
+    const dbStatus = getDBStatus();
+
+    let tripsCount = 0;
+    let placesSavedCount = 0;
+    let storiesSharedCount = 0;
+    let companionsSet = new Set<string>();
+    let destinationsSet = new Set<string>();
+
+    if (dbStatus.connected) {
+      const trips = await TripModel.find({
+        $or: [
+          { owner: userId },
+          { 'collaborators.userId': userId },
+          ...(userEmail ? [{ 'collaborators.email': userEmail }] : []),
+        ],
+      });
+      tripsCount = trips.length;
+      trips.forEach((t) => {
+        if (t.destination) destinationsSet.add(t.destination);
+        if (Array.isArray(t.collaborators)) {
+          t.collaborators.forEach((c: any) => {
+            if (c.email && c.email.toLowerCase() !== userEmail) companionsSet.add(c.email.toLowerCase());
+          });
+        }
+      });
+
+      placesSavedCount = await FavoriteModel.countDocuments({ userId });
+      const { StoryModel } = await import('../models/Story.js');
+      storiesSharedCount = await StoryModel.countDocuments({ authorId: userId });
+    } else {
+      const userTrips = memoryStore.trips.filter((t) => {
+        if (t.owner === userId) return true;
+        if (Array.isArray(t.collaborators)) {
+          return t.collaborators.some(
+            (c: any) => c.userId === userId || (userEmail && c.email?.toLowerCase() === userEmail)
+          );
+        }
+        return false;
+      });
+      tripsCount = userTrips.length;
+      userTrips.forEach((t) => {
+        if (t.destination) destinationsSet.add(t.destination);
+        if (Array.isArray(t.collaborators)) {
+          t.collaborators.forEach((c: any) => {
+            if (c.email && c.email.toLowerCase() !== userEmail) companionsSet.add(c.email.toLowerCase());
+          });
+        }
+      });
+
+      placesSavedCount = memoryStore.favorites.filter((f) => f.userId === userId).length;
+      storiesSharedCount = memoryStore.stories.filter((s) => s.authorId === userId).length;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        tripsCount,
+        placesSavedCount,
+        storiesSharedCount,
+        companionsCount: companionsSet.size,
+        destinationsCount: destinationsSet.size,
+        destinations: Array.from(destinationsSet),
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
