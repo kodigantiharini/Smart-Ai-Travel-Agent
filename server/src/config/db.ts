@@ -4,6 +4,8 @@ import { ENV } from './env.js';
 import { UserModel } from '../models/User.js';
 import { TripModel } from '../models/Trip.js';
 import { ItineraryModel } from '../models/Itinerary.js';
+import { StoryModel } from '../models/Story.js';
+import { memoryStore } from '../services/memoryStore.js';
 
 let isConnected = false;
 let isInMemoryFallback = false;
@@ -79,6 +81,57 @@ const seedMongoDemoData = async () => {
         ],
       });
       console.log('Demo user Alex Rivera and sample trips successfully seeded in MongoDB Atlas.');
+    }
+
+    // Seed or enrich MiVoyage group collaboration features on demo trips
+    const demoTrip = await TripModel.findOne({ name: /Paris & Swiss Alps/i });
+    if (demoTrip) {
+      let needsSave = false;
+      if (!demoTrip.inviteCode) {
+        demoTrip.inviteCode = 'MIV-PARIS';
+        needsSave = true;
+      }
+      if (!demoTrip.collaborators || demoTrip.collaborators.length === 0) {
+        demoTrip.collaborators = memoryStore.trips[0].collaborators as any;
+        needsSave = true;
+      }
+      if (!demoTrip.votes || demoTrip.votes.length === 0) {
+        demoTrip.votes = memoryStore.trips[0].votes as any;
+        needsSave = true;
+      }
+      if (!demoTrip.messages || demoTrip.messages.length === 0) {
+        demoTrip.messages = memoryStore.trips[0].messages as any;
+        needsSave = true;
+      }
+      if (!demoTrip.bookings || demoTrip.bookings.length === 0) {
+        demoTrip.bookings = memoryStore.trips[0].bookings as any;
+        needsSave = true;
+      }
+      if (needsSave) {
+        await demoTrip.save();
+        console.log('Enriched demo trip with MiVoyage collaborative features in MongoDB.');
+      }
+    }
+
+    // Seed MiVoyage Community Stories if collection is empty
+    const storyCount = await StoryModel.countDocuments();
+    if (storyCount === 0) {
+      const seeded = memoryStore.stories.map((s) => ({
+        title: s.title,
+        content: s.content,
+        author: s.author,
+        destination: s.destination,
+        photos: s.photos || [],
+        category: s.category || 'moments',
+        tags: s.tags || [],
+        likesCount: s.likesCount || 0,
+        likedBy: s.likedBy || [],
+        comments: s.comments || [],
+        tripPreview: s.tripPreview,
+        createdAt: s.createdAt || new Date().toISOString(),
+      }));
+      await StoryModel.insertMany(seeded);
+      console.log('MiVoyage Community Stories successfully seeded in MongoDB.');
     }
   } catch (err: any) {
     console.warn('Mongo demo seed skipped:', err.message);

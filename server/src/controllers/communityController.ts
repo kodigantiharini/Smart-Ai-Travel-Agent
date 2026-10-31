@@ -26,8 +26,30 @@ export const getStories = async (req: Request, res: Response): Promise<void> => 
         ];
       }
 
-      const stories = await StoryModel.find(query).sort({ createdAt: -1 }).limit(50);
-      res.json({ success: true, data: stories });
+      let stories = await StoryModel.find(query).sort({ createdAt: -1 }).limit(50);
+      if (stories.length === 0 && !category && !destination && !search) {
+        try {
+          const seeded = memoryStore.stories.map((s) => ({
+            title: s.title,
+            content: s.content,
+            author: s.author,
+            destination: s.destination,
+            photos: s.photos || [],
+            category: s.category || 'moments',
+            tags: s.tags || [],
+            likesCount: s.likesCount || 0,
+            likedBy: s.likedBy || [],
+            comments: s.comments || [],
+            tripPreview: s.tripPreview,
+            createdAt: s.createdAt || new Date().toISOString(),
+          }));
+          await StoryModel.insertMany(seeded);
+          stories = await StoryModel.find(query).sort({ createdAt: -1 }).limit(50);
+        } catch (seedErr) {
+          console.warn('Auto-seed MongoDB stories skipped:', seedErr);
+        }
+      }
+      res.json({ success: true, count: stories.length, data: stories });
     } else {
       let filtered = [...memoryStore.stories];
       if (category && category !== 'all') {
